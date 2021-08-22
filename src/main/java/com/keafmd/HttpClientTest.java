@@ -17,7 +17,9 @@ import org.jsoup.select.Elements;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,7 +35,7 @@ public class HttpClientTest {
     public static void main(String[] args) throws IOException {
 
         //这里修改每套题的组id
-        String tid = "46702839";
+        String tid = "46780424";
         HashMap<String, String> firstQuestion = getTheFirstQuestion(tid);
         String qid = firstQuestion.get("qid");
         List<String> list = backToTheCollectionOfQuestions(tid, qid);
@@ -45,7 +47,7 @@ public class HttpClientTest {
         //System.out.println(nnn);
 
 
-        File file = new File("C:\\Users\\章贺龙\\Desktop\\模板.md");
+        File file = new File("H:\\MyFile\\Blog\\模板\\模板.md");
         InputStreamReader read = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
         BufferedReader bufferedReader = new BufferedReader(read);
         String lineTxt = null;
@@ -91,9 +93,16 @@ public class HttpClientTest {
         }
 
 
-        System.out.println(result);
+        //输出最后的信息
+        //System.out.println(result);
 
-        FileOutputStream fos = new FileOutputStream("C:\\Users\\章贺龙\\Desktop\\99.md",true);
+        Date d = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        System.out.println("当前时间：" + sdf.format(d));
+
+        String name = sdf.format(d);
+
+        FileOutputStream fos = new FileOutputStream("H:\\MyFile\\Blog\\每天进步一点点系列\\"+name+".md",true);
        //true表示在文件末尾追加
         fos.write(result.getBytes());
         fos.close();
