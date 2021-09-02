@@ -1,15 +1,22 @@
 package com.keafmd;
 
+import com.deepoove.poi.XWPFTemplate;
+import com.deepoove.poi.data.MiniTableRenderData;
+import com.deepoove.poi.data.PictureRenderData;
+import com.deepoove.poi.data.RowRenderData;
+import com.deepoove.poi.data.TextRenderData;
+import com.deepoove.poi.util.BytePictureUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.HttpClientUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,26 +25,28 @@ import org.jsoup.select.Elements;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Keafmd
  *
- * @ClassName: HttpClientTest
- * @Description:
+ * @ClassName: DocxTemplate
+ * @Description: 使用docx模板
  * @author: 牛哄哄的柯南
- * @date: 2021-08-20 14:53
+ * @date: 2021-09-02 9:37
  */
-public class HttpClientTest {
+public class DocxTemplate {
     public static void main(String[] args) throws IOException {
 
 
-
         //这里修改每套题的组id
-        String tid = "47125006";
+        String tid = "47289822";
         HashMap<String, String> firstQuestion = getTheFirstQuestion(tid);
         String qid = firstQuestion.get("qid");
         List<String> list = backToTheCollectionOfQuestions(tid, qid);
@@ -45,58 +54,37 @@ public class HttpClientTest {
         HashMap<Integer, HashMap<String, String>> problemMap = analyzeTheContentOfEachQuestion(resmap, list);
 
 
-        //String nnn = "sdsf" + "\n" + "sdfsg";
-        //System.out.println(nnn);
+        XWPFTemplate template = XWPFTemplate.compile("H:\\MyFile\\Blog\\模板\\wx1.docx").
+                render(new HashMap<String, Object>() {{
+
+                    for (int i = 10; i >= 1; i--) {
+                        String timu = "题目";
+                        String daan = "答案";
+                        String xuan = "选项";
+                        String tijie = "题解内容";
+                        timu += i;
+                        daan += i;
+                        xuan += i;
+                        tijie += i;
+
+                        put("title", "我是标题啊");
 
 
-        File file = new File("H:\\MyFile\\Blog\\模板\\模板.md");
-        InputStreamReader read = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
-        BufferedReader bufferedReader = new BufferedReader(read);
-        String lineTxt = null;
-        HashMap<String, Integer> map = new HashMap<>();
-        List<String> list1 = new ArrayList<>();
-
-        StringBuilder readString = new StringBuilder();
+                        put(timu, problemMap.get(i - 1).get("title"));
+                        put(daan, problemMap.get(i - 1).get("answer"));
+                        put(xuan, problemMap.get(i - 1).get("roptions"));
+                        put(tijie, problemMap.get(i - 1).get("rnote"));
+                    }
 
 
-        while ((lineTxt = bufferedReader.readLine()) != null) {
-            //System.out.println(lineTxt);
-            readString.append(lineTxt);
-            readString.append("\n");
-        }
-
-        //System.out.println(readString.toString());
-        String result = readString.toString();
-        //System.out.println(result);
+                    /* 文字 */
 
 
-
-        for(int i=10;i>=1;i--){
-            String timu = "题目";
-            String daan = "答案";
-            String xuan = "选项";
-            String tijie = "题解内容";
-            timu+=i;
-            daan+=i;
-            xuan+=i;
-            tijie+=i;
-
-            /*System.out.println(problemMap.get(i-1).get("title"));
-            System.out.println(problemMap.get(i-1).get("answer"));
-            System.out.println(problemMap.get(i-1).get("roptions"));
-            System.out.println(problemMap.get(i-1).get("rnote"));*/
+                    /* 图片 */
+                    //put("image", new PictureRenderData(100, 100, ".png", BytePictureUtils.getUrlBufferedImage("https://img-blog.csdnimg.cn/20190627130806508.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM3MTI4MDQ5,size_16,color_FFFFFF,t_70")));
 
 
-            String title = result.replace(timu, problemMap.get(i - 1).get("title"));
-            String answer = title.replace(daan, problemMap.get(i - 1).get("answer"));
-            String roptions = answer.replace(xuan, problemMap.get(i - 1).get("roptions"));
-            String rnote = roptions.replace(tijie, problemMap.get(i - 1).get("rnote"));
-            result = rnote;
-        }
-
-
-        //输出最后的信息
-        //System.out.println(result);
+                }});
 
         Date d = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -104,16 +92,22 @@ public class HttpClientTest {
 
         String name = sdf.format(d);
 
-        FileOutputStream fos = new FileOutputStream("H:\\MyFile\\Blog\\每天进步一点点系列\\"+name+".md",true);
-       //true表示在文件末尾追加
-        fos.write(result.getBytes());
-        fos.close();
+        FileOutputStream out = new FileOutputStream("H:\\MyFile\\Blog\\每天进步一点点系列\\" + name + ".docx",true);
+        template.write(out);
+        out.flush();
+        out.close();
+        template.close();
+
+
+
 
 
     }
 
+
     /**
      * 解析每题的内容
+     *
      * @param resmap
      * @param list
      * @return
@@ -147,8 +141,11 @@ public class HttpClientTest {
 
 
                 //System.out.println(s);
-                if(i1<optionsSplit.length-1){
+                if (i1 < optionsSplit.length-1) {
                     s += "\n";
+                    s += "换行";
+                    s += "\n";
+
                 }
 
                 roptions = roptions + s;
@@ -168,7 +165,9 @@ public class HttpClientTest {
                 nnote++;
 
                 //System.out.println(s);
-                if(i1<noteSplit.length-1){
+                if (i1 < noteSplit.length-1) {
+                    s += "\n";
+                    s += "换行";
                     s += "\n";
                 }
 
@@ -176,11 +175,11 @@ public class HttpClientTest {
 
             }
 
-            map.put("title",title);
-            map.put("answer",answer);
-            map.put("roptions",roptions);
-            map.put("rnote",rnote);
-            res.put(i,map);
+            map.put("title", title);
+            map.put("answer", answer);
+            map.put("roptions", roptions);
+            map.put("rnote", rnote);
+            res.put(i, map);
 
 
         }
